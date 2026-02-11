@@ -58,10 +58,10 @@ function getMockData() {
             protocols: 12
         },
         cosmo: {
-            price: 0.0234,
-            priceChange: 5.2,
-            marketCap: 2340000,
-            volume24h: 125000
+            price: null,
+            priceChange: null,
+            marketCap: null,
+            volume24h: null
         }
     };
 }
@@ -98,12 +98,12 @@ async function fetchData() {
                 protocols: 12 // TODO: Get real count from Supra
             },
             cosmo: {
-                // TODO: Query GraphQL for $COSMO specific data
-                // For now, placeholder
-                price: 0.0234,
-                priceChange: 5.2,
-                marketCap: 2340000,
-                volume24h: 125000
+                // TODO: No public API available yet for $COSMO token data
+                // Waiting for Atmos/Supra to provide token-specific endpoints
+                price: null,
+                priceChange: null,
+                marketCap: null,
+                volume24h: null
             }
         };
         
@@ -127,8 +127,8 @@ function updateUI(data) {
     document.getElementById('supra-protocols').textContent = data.supra.protocols;
     
     // $COSMO Token
-    document.getElementById('cosmo-price').textContent = '$' + data.cosmo.price.toFixed(4);
-    document.getElementById('cosmo-price-change').innerHTML = formatChange(data.cosmo.priceChange);
+    document.getElementById('cosmo-price').textContent = data.cosmo.price ? '$' + data.cosmo.price.toFixed(4) : 'Data unavailable';
+    document.getElementById('cosmo-price-change').innerHTML = data.cosmo.priceChange !== null ? formatChange(data.cosmo.priceChange) : '<span style="color: #999;">-</span>';
     document.getElementById('cosmo-mcap').textContent = formatNumber(data.cosmo.marketCap);
     document.getElementById('cosmo-volume').textContent = formatNumber(data.cosmo.volume24h);
     
