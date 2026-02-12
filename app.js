@@ -9,6 +9,9 @@ const CONFIG = {
         // Atmos Protocol Stats
         ATMOS_STATS: 'https://api.atmos.ag/stats/api/overall-stats',
         
+        // Atmos Token Prices (NEW!)
+        TOKEN_PRICES: 'https://prod-gw.atmosprotocol.com/swapRouter/prices',
+        
         // Atmos Leaderboard
         ATMOS_LEADERBOARD: 'https://api.atmos.ag/stats/api/v1/leaderboard/data',
         
@@ -83,6 +86,21 @@ async function fetchData() {
         const volume7d = stats.totalVolume; // This is total volume
         const volume24h = stats.breakdown.dexVolume + stats.breakdown.swapStepVolume;
         
+        // Fetch $COSMO token price
+        let cosmoPrice = null;
+        try {
+            const pricesResponse = await fetch(CONFIG.ENDPOINTS.TOKEN_PRICES);
+            const pricesData = await pricesResponse.json();
+            
+            if (pricesData.success && pricesData.data) {
+                // Get $COSMO price by token address
+                const priceStr = pricesData.data[CONFIG.TOKEN_ADDRESS];
+                cosmoPrice = priceStr ? parseFloat(priceStr) : null;
+            }
+        } catch (priceError) {
+            console.warn('Could not fetch $COSMO price:', priceError);
+        }
+        
         // For now, we'll use Atmos TVL as "Supra Chain TVL" proxy
         // TODO: Find actual Supra Chain-wide TVL endpoint
         
@@ -98,12 +116,10 @@ async function fetchData() {
                 protocols: 12 // TODO: Get real count from Supra
             },
             cosmo: {
-                // TODO: No public API available yet for $COSMO token data
-                // Waiting for Atmos/Supra to provide token-specific endpoints
-                price: null,
-                priceChange: null,
-                marketCap: null,
-                volume24h: null
+                price: cosmoPrice,
+                priceChange: null, // TODO: Calculate from price history
+                marketCap: null, // TODO: Needs total supply
+                volume24h: null // TODO: Needs GraphQL query or RPC
             }
         };
         
@@ -127,10 +143,19 @@ function updateUI(data) {
     document.getElementById('supra-protocols').textContent = data.supra.protocols;
     
     // $COSMO Token
-    document.getElementById('cosmo-price').textContent = data.cosmo.price ? '$' + data.cosmo.price.toFixed(4) : 'Data unavailable';
-    document.getElementById('cosmo-price-change').innerHTML = data.cosmo.priceChange !== null ? formatChange(data.cosmo.priceChange) : '<span style="color: #999;">-</span>';
-    document.getElementById('cosmo-mcap').textContent = formatNumber(data.cosmo.marketCap);
-    document.getElementById('cosmo-volume').textContent = formatNumber(data.cosmo.volume24h);
+    if (data.cosmo.price !== null) {
+        // Format small prices with more decimals
+        const priceStr = data.cosmo.price < 0.001 
+            ? '$' + data.cosmo.price.toFixed(7) 
+            : '$' + data.cosmo.price.toFixed(4);
+        document.getElementById('cosmo-price').textContent = priceStr;
+    } else {
+        document.getElementById('cosmo-price').textContent = 'Data unavailable';
+    }
+    
+    document.getElementById('cosmo-price-change').innerHTML = data.cosmo.priceChange !== null ? formatChange(data.cosmo.priceChange) : '<span style="color: #999;">Coming soon</span>';
+    document.getElementById('cosmo-mcap').textContent = data.cosmo.marketCap ? formatNumber(data.cosmo.marketCap) : 'Coming soon';
+    document.getElementById('cosmo-volume').textContent = data.cosmo.volume24h ? formatNumber(data.cosmo.volume24h) : 'Coming soon';
     
     // Update timestamp
     const now = new Date();
